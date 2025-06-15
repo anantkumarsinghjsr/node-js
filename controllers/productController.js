@@ -1,5 +1,6 @@
 import productModel from "../models/productModel.js";
 import categoryModel from "../models/categoryModel.js";
+import fetch from "node-fetch";
 
 export const getAllProductsController = async (req, res) => {
   try {
@@ -83,6 +84,76 @@ export const getTopProductsController = async (req, res) => {
   }
 };
 
+export const productBulkCreateController = async (req, res) => {
+  try {
+    const category = req.params.category;
+    const response = await fetch("https://dummyjson.com/products");
+    const data = await response.json();
+
+    if (data.products.length > 0) {
+      //data.products.forEach((element) => {
+      for (let i = 0; i < data.products.length; i++) {
+        const title = data.products[i].title;
+        const productList = await productModel.find(
+          { title },
+          { _id: 0, title: 1 }
+        );
+        if (productList.length === 0) {
+          console.log(data.products[i].category);
+          const category = data.products[i].category;
+          const categoryList = await categoryModel.find(
+            { slug: category },
+            { slug: 1, name: 1 }
+          );
+          let categoryId = categoryList[0]._id;
+          if (categoryId) {
+            await productModel.create({
+              title: data.products[i].title,
+              description: data.products[i].description,
+              price: data.products[i].price,
+              category: categoryId,
+              discountPercentage: data.products[i].discountPercentage,
+              rating: data.products[i].rating,
+              stock: data.products[i].stock,
+              tags: data.products[i].tags,
+              brand: data.products[i].brand,
+              sku: data.products[i].sku,
+              weight: data.products[i].weight,
+              warrantyInformation: data.products[i].warrantyInformation,
+              shippingInformation: data.products[i].shippingInformation,
+              availabilityStatus: data.products[i].availabilityStatus,
+              returnPolicy: data.products[i].returnPolicy,
+              minimumOrderQuantity: data.products[i].minimumOrderQuantity,
+              thumbnail: data.products[i].thumbnail,
+              meta: data.products[i].meta,
+              images: data.products[i].images,
+            });
+          }
+        }
+      }
+      const count = await productModel.countDocuments({});
+      res.status(201).send({
+        success: false,
+        message: "success",
+        count,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    // cast error ||  OBJECT ID
+    if (error.name === "CastError") {
+      return res.status(500).send({
+        success: false,
+        message: "Invalid Id Prodect",
+      });
+    }
+    res.status(500).send({
+      success: false,
+      message: "Error In Get TOP PRODUCTS API",
+      error,
+    });
+  }
+};
 export const createProdectController = async (req, res) => {
   try {
     const {
